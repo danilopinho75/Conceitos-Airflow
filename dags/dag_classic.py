@@ -14,12 +14,12 @@ def extract_data_bitcoin():
   return requests.get(API).json()
 #%%
 # todo process
-def process_bitcoin(data):
-  response = data.xcom_pull(task_ids="extract_data_bitcoin") 
+def process_bitcoin(ti):
+  response = ti.xcom_pull(task_ids="extract_bitcoin_from_api") 
   logging.info(response)
-  valor = data["data"]["amount"]
-  criptomoeda = data["data"]["base"]
-  moeda = data["data"]["currency"]
+  valor = response["data"]["amount"]
+  criptomoeda = response["data"]["base"]
+  moeda = response["data"]["currency"]
   timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
   processed_data = {
     "valor": valor,
@@ -27,7 +27,7 @@ def process_bitcoin(data):
     "moeda": moeda,
     "timestamp": timestamp
   }
-  data.xcom_push(key="processed_data", value=processed_data)
+  ti.xcom_push(key="processed_data", value=processed_data)
 
 #%%
 # todo store
@@ -60,6 +60,9 @@ with DAG(
     task_id = "store_bitcoin_from_api",
     python_callable=store_bitcoin
   )
+
+  # set dependencies
+  extract_bitcoin_from_api >> process_bitcoin_from_api >>store_bitcoin_from_api
 
 
 #%%
